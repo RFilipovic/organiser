@@ -7,7 +7,7 @@
 #include <ctime>
 #include <sstream>
 #include <limits>
-#include <cctype> // Za tolower()
+#include <cctype>
 
 struct Time {
     int hour, minute;
@@ -31,14 +31,16 @@ struct Time {
 struct Activity {
     std::string name;
     Time start, end;
-    int id; // Dodali smo ID za lakše uređivanje
+    int id;
 };
 
 std::map<std::string, std::vector<Activity>> schedule;
 std::string currentFilename = "schedule.txt";
 int nextActivityId = 1;
+const std::vector<std::string> daysOfWeek = {
+    "pon", "uto", "sri", "cet", "pet", "sub", "ned"
+};
 
-// Pomoćna funkcija za pretvaranje stringa u mala slova
 std::string toLower(const std::string& str) {
     std::string lowerStr;
     for (char c : str) {
@@ -62,7 +64,7 @@ void addActivity() {
 
     std::cout << "Unesite dan (pon, uto, sri, cet, pet, sub, ned): ";
     std::cin >> day;
-    day = toLower(day); // Normaliziramo unos dana
+    day = toLower(day);
 
     std::cout << "Unesite naziv aktivnosti: ";
     std::cin.ignore();
@@ -226,19 +228,24 @@ void saveToFile() {
 
     std::ofstream file(currentFilename);
     std::time_t now = std::time(nullptr);
-    file << "Schedule created on: " << std::put_time(std::localtime(&now), "%Y-%m-%d") << "\n\n";
+    char timeStr[100];
+    std::strftime(timeStr, sizeof(timeStr), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    
+    file << "Raspored kreiran/izmijenjen: " << timeStr << "\n\n";
 
-    for (const auto& [day, activities] : schedule) {
-        file << day << "\n";
-        for (const auto& act : activities) {
-            file << "\t" << act.name << " / "
-                 << act.start.toString() << "-" << act.end.toString() << "\n";
+    for (const auto& day : daysOfWeek) {
+        if (schedule.find(day) != schedule.end() && !schedule[day].empty()) {
+            file << day << "\n";
+            for (const auto& act : schedule[day]) {
+                file << "\t" << act.name << " / "
+                     << act.start.toString() << "-" << act.end.toString() << "\n";
+            }
+            file << "\n";
         }
-        file << "\n";
     }
 
     file.close();
-    std::cout << "Sacuvano u fajl: " << currentFilename << "\n";
+    std::cout << "Sacuvano u fajl: " << currentFilename << " (vrijeme: " << timeStr << ")\n";
 }
 
 void loadFromFile() {
@@ -265,15 +272,13 @@ void loadFromFile() {
     while (std::getline(file, line)) {
         if (line.empty()) continue;
 
-        // Provjeravamo da li je linija dan (nema tab karakter)
         if (line.find('\t') == std::string::npos) {
             currentDay = toLower(line);
         } else {
-            // Parsiranje aktivnosti
             size_t nameEnd = line.find(" / ");
             if (nameEnd != std::string::npos) {
                 Activity act;
-                act.name = line.substr(1, nameEnd - 1); // Preskačemo tab
+                act.name = line.substr(1, nameEnd - 1);
                 
                 size_t timeSep = line.find('-', nameEnd);
                 if (timeSep != std::string::npos) {
@@ -305,13 +310,22 @@ void loadFromFile() {
 
 void printCurrentSchedule() {
     std::cout << "\nTrenutni raspored (" << currentFilename << "):\n";
-    for (const auto& [day, activities] : schedule) {
-        std::cout << day << "\n";
-        for (const auto& act : activities) {
-            std::cout << "\t" << act.name << " / "
-                     << act.start.toString() << "-" << act.end.toString() << "\n";
+    std::ifstream inFile(currentFilename);
+    std::string firstLine;
+    if (std::getline(inFile, firstLine)) {
+        std::cout << firstLine << "\n\n";
+    }
+    inFile.close();
+
+    for (const auto& day : daysOfWeek) {
+        if (schedule.find(day) != schedule.end() && !schedule[day].empty()) {
+            std::cout << day << "\n";
+            for (const auto& act : schedule[day]) {
+                std::cout << "\t" << act.name << " / "
+                         << act.start.toString() << "-" << act.end.toString() << "\n";
+            }
+            std::cout << "\n";
         }
-        std::cout << "\n";
     }
 }
 
@@ -358,13 +372,11 @@ void copyActivity() {
     std::cin >> targetDay;
     targetDay = toLower(targetDay);
 
-    // Provjera preklapanja u ciljnom danu
     if (isConflict(schedule[targetDay], activityToCopy.start, activityToCopy.end)) {
         std::cout << "Greska: Aktivnost se preklapa sa postojecim terminom u ciljnom danu.\n";
         return;
     }
 
-    // Dodajemo kopiranu aktivnost sa novim ID-om
     activityToCopy.id = nextActivityId++;
     schedule[targetDay].push_back(activityToCopy);
     std::sort(schedule[targetDay].begin(), schedule[targetDay].end(), [](const Activity& a, const Activity& b) {

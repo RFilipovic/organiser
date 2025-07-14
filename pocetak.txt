@@ -1,10 +1,23 @@
-Schedule created on: 2025-07-14
-
-sri
-	ares / 08:00-08:30
+Raspored kreiran/izmijenjen: 2025-07-14 20:51:57
 
 uto
 	ares / 08:00-08:30
 	posta dom predaja natjecaja / 08:30-09:00
 	karla david baska / 09:30-17:00
+
+sri
+	ares / 08:00-08:30
+	interviju / 15:00-16:00
+
+cet
+	ares / 08:00-08:30
+
+pet
+	ares / 08:00-08:30
+
+sub
+	ares / 08:00-08:30
+
+ned
+	ares / 08:00-08:30
 
